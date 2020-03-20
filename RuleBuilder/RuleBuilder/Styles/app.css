@@ -1,0 +1,246 @@
+html,body{
+	font-family: 'Open Sans', sans-serif;
+	color: #585556;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+a, a:hover, a:focus {
+    text-decoration: none;
+}
+ul {
+    padding: 0;
+    margin: 0;
+}
+h1 {
+    color: #ffffff;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 90px;
+    text-align: center;
+    text-transform: uppercase;
+    background: url(/images/app/workout-bg.jpg) no-repeat center center;
+    background-size: auto 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    max-width: 760px;
+    overflow: hidden;
+    padding: 0;
+}
+
+.div_checkbox_class {
+    width: 300px;
+    float: left;
+    padding: 2px;
+    margin: 3px;
+    background-color: #eee;
+}
+
+th {
+  height: 50px;
+  font-weight: bold;
+  text-align: center;
+  background-color: #800000;
+  text-decoration-color:white;
+}
+
+
+
+@media (min-width: 992px) {
+    .container {
+        width: 760px;
+    }
+    #colorbox {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+    .container {
+        width: 760px;
+    }
+
+    #colorbox {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 540px) {
+    #colorbox {
+        max-width: 100% !important;
+    }
+}
+
+.content-wrapper {
+    padding: 20px;
+}
+.workouts {
+    border-top: 5px solid #585556;
+}
+.workouts li {
+    border-bottom: 5px solid #585556;
+    list-style: none;
+}
+.workouts li a {
+    display: block;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 55px;
+    text-align: center;
+    text-transform: uppercase;
+    background: url("/images/app/category-bg.jpg") repeat-x left center;
+}
+.workout-title {
+    color: #ffffff;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 90px;
+    text-align: center;
+    text-transform: uppercase;
+    background: url("/images/app/workout-bg.jpg") no-repeat center center;
+    background-size: auto 100%;
+}
+.interval {
+    position: relative;
+    margin: 0 0 30px 0;
+}
+.interval .grad {
+    background: url("/images/app/interval-bg.jpg") no-repeat center bottom;
+    background-size: 100%;
+}
+.interval .interval-title {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 65px;
+    text-align: center;
+    text-transform: uppercase;
+    background: url("/images/app/interval-curve.png") no-repeat center center;
+    background-size: auto 100%;
+    padding: 37px 0 0 0;
+    margin-top: -45px;
+}
+.interval .interval-title span {
+    color: #ffffff;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 65px;
+}
+.interval .left-spacer {
+    float: left;
+    width: 15%;
+}
+.interval .parts {
+    float: left;
+    width: 70%;
+    padding: 0 5px;
+}
+.interval .parts .rest {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 80px;
+    text-align: center;
+    background: url("/images/app/rest-bg.jpg") no-repeat center center;
+    background-size: auto 100%;
+    padding: 0 0 10px 0;
+    margin: 50px -30% -40px -30%;
+}
+.interval .parts .rest.curve {
+    background-image: url("/images/app/rest-bg-curve.png");
+}
+.interval .rest .rest-time {
+    display: inline-block;
+    height: 40px;
+    width: 40px;
+    margin-bottom: -6px;
+}
+.interval .rest .rest-time.duration-30 {
+    background: url("/images/app/alarm-icon-30s.png") no-repeat center center;
+    background-size: 100% auto;
+}
+.interval .rest .rest-time.duration-10 {
+    background: url("/images/app/alarm-icon-10s.png") no-repeat center center;
+    background-size: 100% auto;
+}
+.interval .parts .exercise {
+    margin: 0;
+}
+.interval .parts .exercise.plus {
+    background: url("/images/app/add-icon.png") no-repeat center bottom;
+    background-size: auto 60px;
+    padding: 0 0 80px 0;
+}
+.interval .parts .exercise-title {
+    color: #585556;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 20px;
+    padding: 30px 0 20px 0;
+}
+.interval .parts .exercise-image {
+    position: relative;
+}
+.interval .parts .exercise-image img {
+    width: 100%;
+    min-height: 150px;
+    border: 10px solid #999;
+}
+.interval .parts .exercise-image .video-icon {
+    position: absolute;
+    left: 25px;
+    top: 25px;
+    width: 60px;
+    height: 60px;
+    background: url("/images/app/video-icon.png") no-repeat center center;
+    background-size: auto 100%;
+}
+.interval .parts .exercise-image .info-icon {
+    position: absolute;
+    right: 25px;
+    top: 25px;
+    width: 60px;
+    height: 60px;
+    background: url("/images/app/info-icon.png") no-repeat center center;
+    background-size: auto 100%;
+}
+
+@media (max-width: 400px) {
+    .interval .parts .exercise-image .video-icon {
+        left: 20px;
+        top: 20px;
+        width: 45px;
+        height: 45px;
+    }
+    .interval .parts .exercise-image .info-icon {
+        right: 20px;
+        top: 20px;
+        width: 45px;
+        height: 45px;
+    }
+}
+
+.interval .parts .exercise-tip {
+    background: url("/images/app/tips-icon.png") no-repeat left center;
+    min-height: 45px;
+    padding: 10px 0 10px 50px;
+    margin: 10px 0 0 0;
+}
+.interval .repeat-sticky {
+    position: absolute;
+    width: 12%;
+    height: 100%;
+    top: 0;
+    right: 0;
+    background: url("/images/app/repeat-30s-img.png") no-repeat center center;
+    background-size: 100% auto;
+}
+.interval.tabata .repeat-sticky {
+    width: 7%;
+    background: url("/images/app/repeat-20s-img.png") no-repeat center center;
+    background-size: 100% auto;
+}

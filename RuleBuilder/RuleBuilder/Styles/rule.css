@@ -1,0 +1,145 @@
+﻿#action_list{
+    float: left;
+    position: relative;
+}
+.condition_container{
+    /*background-color:#dbe5f1;*/
+    background-color:#F5F5DC;
+    border-radius: 15px 15px 0px 0px ;
+}
+.action_container{
+    /*background-color:#fdeada;*/
+    background-color:#ffdec3;
+    border-radius: 0px 0px 15px 15px ;
+}
+
+.connector_container{
+    /*background-color:#dbe5f1;*/
+    background-color:#F5F5DC;
+    border-radius: 15px 15px 0px 0px ;
+}
+
+    .add_group{
+    margin-left:1.5em;
+    display:none;
+}
+.cont{
+    padding: 1em;
+    width: auto;
+}
+.item{
+    /*padding: 0.6em;*/
+    border-radius: 3px;
+    /*margin: 0.5em;*/
+    cursor:pointer;
+}
+.condition{
+    color: #dbe5f1;
+    /*background-color: #366092;*/
+}
+.action{
+    color: #fdeada;
+    /*background-color: #e36c09;*/
+}
+.action_item{
+    margin:1em;
+    border: 1px solid #ed1c24;
+    width: fit-content;
+    border-radius: 15px;
+}
+
+.connector_item{
+    margin:1em;
+    border: 1px solid #ed1c24;
+    width: fit-content;
+    border-radius: 15px;
+}
+
+#new_action_item{
+    /*color: #ed1c24;
+    background-color: #ffffff;
+    padding:1em;
+    border-radius: 5px;
+    cursor:pointer;
+    font-weight:bold;
+    border:1px solid red;
+
+    display: block;
+    background-image: linear-gradient(to left, transparent, transparent 50%, #ED1C24 50%, #ED1C24);
+    background-position: 100% 0;
+    background-size: 200% 100%;
+    transition: all .25s ease-in;
+    font-size: 16px;
+    font-family: serif;*/
+}
+
+#new_action_item:hover{
+    /*color: #ffffff;
+    background-color: #ED1C24;*/
+}
+.boolean{
+    display:none;
+}
+.title{
+    padding: 0.5em;
+    color: #244061;
+    background-color: #95b3d7;
+    margin:0.5em;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+/*.add_action{
+   color:#000000;
+   font-weight:bold;
+   text-decoration:underline;
+}*/
+
+.add_action, .add_condition, .add_group, add_condition_boundary {
+    /*color:#000000;
+   font-weight:bold;*/
+}
+
+.add_condition{
+    width: 145px;
+    padding: 5px 5px 5px 5px !important;
+}
+
+.add_condition_boundary {
+    width: 145px;
+    padding: 5px 5px 5px 5px !important;
+}
+
+.add_condition, add_condition_boundary:hover {
+    /*color: red !important;
+    background-color: #ffffff !important;*/
+}
+
+.add_action{
+    width: 145px;
+    padding: 5px 5px 5px 5px !important;
+}
+.add_action:hover{
+    /*color: red !important;
+    background-color: #ffffff !important;*/
+}
+.remove{
+    text-align:right;
+}
+.boxVal{
+    font-weight:bold;
+    font-size:18px;
+    color:green;
+}
+
+.boxVal p{
+    height: 30px;
+    width: 30px;
+    border-radius: 30px;
+    border: 1px solid black;
+    background: #5cb85c;
+    text-align:center;
+    font-size: 18px;
+    font-weight:bold;
+    color:#fff700;
+}

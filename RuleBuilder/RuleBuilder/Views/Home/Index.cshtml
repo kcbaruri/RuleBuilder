@@ -1,0 +1,710 @@
+﻿@model RuleBuilder.Models.SaveRuleViewModel
+
+@{
+    ViewBag.Title = "Create new rule";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Rule Create</h2>
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <div class="form-horizontal" id="ruleBody">
+        <input type="hidden" id="hiddenField" name="hiddenField" value="3487">
+        <input type="hidden" id="hiddenFieldForClosestCi" name="hiddenField" value="ci_initial">
+
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Name, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control", @style = "width:303px", @id = "txtRuleName" } })
+                @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div id="action_list"> </div>
+
+        <div class="form-group row col-md-12">
+            <div class="col-md-3">
+                <input type="button" style="float:right; width:200px;" value="Add another Action" class="btn btn-success" id="new_action_item" />
+            </div>
+
+            <div class="col-md-9" style="float:left;">
+                <input type="button" value="Save" style="width:200px;" class="btn btn-success" id="save_rule_item" />
+            </div>
+        </div>
+
+        <div id="connector_template" style="display:none;">
+            <div class="connnection_item" id="connector_new">
+
+            </div>
+        </div>
+
+        <div id="action_template" style="display:none;">
+            <div class="action_item" id="ai_new">
+                <div class="condition_container cont" id="cc_new">
+                    <div class="row" id="top_bar">
+                        <div id="boxCount" class="boxVal col-md-4"><p>1</p></div>
+                        <div class="col-md-8" style="text-align:right"><i class="duplicate_condition fa fa-clone fa-2x" style="padding:5px"></i><i class="remove glyphicon glyphicon-remove-circle fa-2x"></i></div>
+                    </div>
+                    @*new button area start*@
+                    <a href="#" class="add_condition btn btn-success">Add a Condition</a>
+
+                    <a href="#" class="add_condition_boundary btn btn-success">Start Block</a>
+
+                    <a href="#" class="add_condition_boundary btn btn-success">Close Block</a>
+                    <a href="#" class="add_condition_boundary btn btn-success">Delete Block</a>
+
+                    @*new button area end*@
+                </div>
+
+                <div class="action_container cont" id="ac_new">
+                    Rule output: <br /><a href="#" class="add_action btn btn-success">Add an Action</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+<br />
+<div class="row col-md-12">
+    @Html.ActionLink("Back to List", "RuleList", null, new { @class = "btn btn-danger" })
+</div>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        $("#action_list").append(addRuleConnector()); // Used for initial IF
+        $("#action_list").append($("#action_template").html());
+        renameRuleContainer();
+
+        $("#new_action_item").click(function () {
+            $("#action_list").append(addRuleConnector());
+            $("#action_list").append($("#action_template").html());
+            renameRuleContainer();
+            boxNumbering();
+        });
+
+        $("#action_list").delegate(".add_condition", "click", function () {
+            var $this = $(this);
+            var condition = addRule();
+            if (condition) {
+                var par = $this.parent(".cont");
+                if (par.find(".item").size() >= 1) {
+                    var innerConnectorList = '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                    new SelectList(ListService.GetEnumItems<InnerConnectorList>(), "Value", "Text"), "--Select--",
+                    new { @id = "drp_inner_connector", @class = "form-control"}).ToHtmlString())'
+
+                    $this.before("<div class='boolean' id = 'inner_connector' style ='width =150px; display: inline - block'>" + innerConnectorList.replace(/&quot;/g, " ") + "</div>");
+                    par.find(".boolean").show("fast");
+                }
+                else {
+                    par.find(".boolean").hide("fast");
+                }
+
+                $this.before("<div class='condition item' id = 'ci_new'>" + condition + "</div>");
+                $('#ci_new').attr('id', $('#ci_new').parent().attr('id') + 'ci' + $('#' + $('#ci_new').parent().attr('id') + ' .condition.item').length);
+                renameConditionBlockControls();
+            }
+            return false;
+        }).delegate(".add_action", "click", function () {
+            var $this = $(this);
+            var action = addOutput();
+
+            if (action) {
+                var par = $this.parent(".cont");
+                if (par.find(".item").size() == 0) {
+                    $this.before("<div class='action item' id = 'ai_new'>" + action + "</div>");
+                    $('#ai_new').attr('id', $('#ai_new').parent().attr('id') + 'ao' + $('#' + $('#ai_new').parent().attr('id') + ' .action.item').length);
+                    renameRuleOutputBlockControls();
+                }
+                else {
+                    alert("The output of the rule is already added.");
+                }
+            }
+            return false;
+        }).delegate(".title", "click", function () {
+            var $this = $(this);
+            var html = $this.html();
+            if (html === "Both") {
+                var par = $this.parent(".cont");
+                par.find(".boolean").html("OR");
+                $this.html("Either");
+            } else {
+                var par = $this.parent(".cont");
+                par.find(".boolean").html("AND");
+                $this.html("Both");
+            }
+            return false;
+            }).delegate(".add_condition_boundary", "click", function () {
+                var $this = $(this);
+                var html = $this.html();
+                if (html == "Start Block") {
+                    var grandParent = $('#hiddenFieldForClosestCi').val();
+                    var startDiv = "<div id ='" + grandParent + "_start_block'><a href='#' id ='" + grandParent + "_start_anchor' style ='font-weight: bold;font-size:30px;' onclick='saveCurrentlyFocusedColumnIndex(this); return false;'>[</a></div>"
+                    startDiv.replace(/&quot;/g, " ");
+                    $('#' + grandParent).before(startDiv);
+                }
+                else if (html == "Close Block") {
+                    var grandParent = $('#hiddenFieldForClosestCi').val();
+                    var closeDiv = "<div id ='" + grandParent + "_close_block'><a href='#' id ='" + grandParent + "_close_anchor' style ='font-weight: bold;font-size:30px;' onclick='saveCurrentlyFocusedColumnIndex(this); return false;'>]</a></div>"
+                    closeDiv.replace(/&quot;/g, " ");
+                    $('#' + grandParent).after(closeDiv);
+                }
+                else {
+                    deleteRuleInnerBlock();
+                }
+                return false;
+        });
+    });
+
+    $("#action_list").delegate(".duplicate_condition", "click", function () {
+        var $parent = $(this).closest('.action_item');
+
+        //Adding the connector.
+        //$('#' + $parent.attr('id')).after(addRuleConnector());
+        var $child = $parent.clone();
+
+        var $originalSelects = $parent.find('select');
+        $child.find('select').each(function (index, item) {
+            $(item).val($originalSelects.eq(index).val());
+        });
+
+        var $originalTextareas = $parent.find('input');
+
+        $child.find('input').each(function (index, item) {
+            $(item).val($originalTextareas.eq(index).val());
+        });
+
+        //Adding the connector.
+        $("#action_list").append(addRuleConnector());
+
+        //Adding a new child.
+        $("#action_list").append($child);
+        var totalChildren = $("#action_list > div").length;
+        var newActionItemId = 'ai' + totalChildren;
+        $('#action_list').children().last().attr('id', newActionItemId);
+
+        if ($('#action_list').html().includes('rule_connector')) {
+            var actionItem = 'ai' + $("#action_list > div").length; // ai = action item
+            var ruleConnector = 'rule_connector' + actionItem.replace('ai', 'con');
+            $('#rule_connector').attr('id', ruleConnector);
+            $('#connectorList_newRow').attr('id', 'connectorList' + actionItem);
+        }
+        renameControlsId(newActionItemId);
+        boxNumbering();
+    });
+
+    function renameControlsId(newActionItemId) {
+        $('#' + newActionItemId + '> div').each(function () {
+            var secondLevelChild = $(this);
+            if (secondLevelChild.attr('id').includes('cc')) {
+                var ccId = newActionItemId + 'cc1';
+                secondLevelChild.attr('id', ccId); // 2nd level ID is being changed.
+                var ciCounter = 1;
+                $('#' + ccId + '> div').each(function () {
+                    var thirdLevelChild = $(this);
+                    var thirdLevelChildId = thirdLevelChild.attr('id');
+                    if (thirdLevelChildId.includes('ai') && thirdLevelChildId.includes('cc') && thirdLevelChildId.includes('ci')) {
+                        var finalCcId = ccId + 'ci' + ciCounter;
+                        ciCounter++;
+                        $(this).attr('id', finalCcId); // 3rd level ID is being changed.
+                        var newCcTableId = finalCcId + 'tbl';
+
+                        $('#' + finalCcId + '> table').each(function () {
+                            $(this).attr('id', newCcTableId); // 4th level ID is being changed.
+                        });
+                        renameTableControls(newCcTableId);
+                    }
+                });
+            }
+            else if (secondLevelChild.attr('id').includes('ac')) {
+                var acId = newActionItemId + 'ac1';
+                secondLevelChild.attr('id', acId); // 2nd level ID is being changed.
+
+                $('#' + acId + '> div').each(function () {
+                    var actionItem = $(this).attr('id');
+                    if (actionItem.includes('ai') && actionItem.includes('ac') && actionItem.includes('ao')) {
+                        var finalAcId = acId + 'ao1';
+                        $(this).attr('id', finalAcId); // 3rd level ID is being changed.
+                        var newAcTableId = finalAcId + 'tbl';
+                        $('#' + finalAcId + '> table').each(function () {
+                            $(this).attr('id', newAcTableId); // 4th level ID is being changed.
+                        });
+                        renameTableControls(newAcTableId);
+                    }
+                });
+            }
+        });
+    }
+
+    function renameTableControls(newTableId) {
+        $('#' + newTableId + " TBODY TR TD").each(function () {
+            $(this).each(function () {
+                    $(this).children().each(function () {
+                        var fifthLevelControlId = $(this).attr('id');
+                        var newId = newTableId + fifthLevelControlId.substr(9);
+                        $(this).attr('id', newId);
+                    });
+            });
+        });
+    }
+
+    // add box numbering
+
+    function boxNumbering() {
+        var count = 1;
+        $("#action_list > .action_item > .condition_container > .row > .boxVal").each(function () {
+            $($(this)).children('p').text(count);
+            count++;
+        });
+    }
+
+    //// Remove the box div section
+
+    $("#action_list").delegate(".remove", "click", function () {
+        var numberPart = $(this).parents('.action_item').attr('id').match(/\d+/);
+
+        var connectorId = '';
+        var parentIndex = $(this).parents('.action_item').index();
+        if (parentIndex == 0) {
+            var parentDiv = $(this).parents('.action_item').attr('id');
+            connectorId = $('#' + parentDiv).next().prop('id');
+        }
+        else if (parentIndex != 0) {
+            var parentDiv = $(this).parents('.action_item').attr('id');
+            connectorId = $('#' + parentDiv).prev().prop('id');
+        }
+
+        $('#' + connectorId).remove();
+
+        $(this).parents('.action_item').remove();
+
+        var count = 1;
+        $("#action_list > .action_item > .condition_container > .row > .boxVal").each(function () {
+            $($(this)).children('p').text(count);
+            count++;
+        });
+    });
+
+
+    function addRule() {
+        var rowToAdd = '';
+
+        rowToAdd += '<table id="tblInner_new" class="table" style="table-layout:auto; white-space: nowrap;" cellpadding="0" cellspacing="0">';
+
+        rowToAdd += '<tr>';
+
+        rowToAdd += '<td width = "150" style ="display:inline-block">';
+        rowToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                    new SelectList(ListService.GetEnumItems<RuleOperandTypeList>(), "Value", "Text"), "--Select--",
+                    new { @id = "conditional_operand_type_list_newRow", @class = "form-control fstdropdown-select",
+                        @onChange = "createOperand(this)", @onClick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+        rowToAdd += '</td>';
+
+        rowToAdd += '<td width = "150" style ="display:inline-block">';
+        rowToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.Operator,
+                    new SelectList(ListService.GetEnumItems<RuleComperatorList>(), "Value", "Text"),"--Select--",
+                    new { @id = "rbOperatorListCol2_newRow", @class = "form-control fstdropdown-select",
+                        @onChange = "addNewOperandList(this)", @onClick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+        rowToAdd += '</td>';
+
+        rowToAdd += '<td style="display: inline-flex;" id = "rx13cy13">';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnAddMoreCellsCol13_newRow" title="Include more parameter" onclick="addNewColumns(this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-plus-sign fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnAddLeftBracketCellsCol13_newRow" title="Add left parenthesis" onclick="addOpenCloseParenthesis(1, this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-chevron-left fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnAddRightBracketCellsCol13_newRow" title="Add right parenthesis" onclick="addOpenCloseParenthesis(2, this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-chevron-right fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnDeleteInnerCellsCol13_newRow" title="Delete last parameter" onclick="deleteRuleParameter(this)"><span class="glyphicon glyphicon-minus-sign fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnDeleteRowCol3_newRow" title="Delete row" onClick ="deleteRow(this)"><span class="glyphicon glyphicon-trash fa-2x"></span></a>';
+        rowToAdd += '</td>';
+
+        rowToAdd += '</td></tr></table>';
+        rowToAdd = rowToAdd.replace(/&quot;/g, " ");
+        return rowToAdd;
+    }
+
+
+    function createOperand(targetControl) {
+        var currentControlId = "#" + targetControl.id;
+
+        var selectedValue = $(currentControlId).find('option:selected').val();
+
+        var columnIndex = $(currentControlId).closest('td').index();
+        var currentRow = $(currentControlId).closest('tr');
+
+        var columnHtml = '';
+        if (selectedValue == "VLU" || selectedValue == "PER") {
+            columnHtml += '<td  width = "150" style ="display:inline-block">';
+            columnHtml += '@Html.EditorFor(model => model.ReferenceValue, new { htmlAttributes = new { @class = "form-control",
+                          @id = "rbTxtReferenceValueCol6_newRow", @onClick = "saveCurrentlyFocusedColumnIndex(this)" } })';
+            columnHtml += '</td>';
+        }
+
+        else if (selectedValue == "AVG" || selectedValue == "MAX" || selectedValue == "MIN" || selectedValue == "SUM") {
+
+            var parameterId = 0, parameterTypeId = 0;
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                url: "/Rule/GetNumericParameterList",
+                data: "{parameterId:" + parameterId + ", parameterTypeId:" + parameterTypeId + "}",
+                success: function (data) {
+                    if (data.length > 0) {
+                        var changedId = parentId + "_numeric_parameter_list_value_colindex_" + (columnCount++);
+                        var innerText = "<td  width = '150' style ='display:inline-block><div id ='" + changedId + "'>";
+                        for (var i = 0; i < data.length; i++) {
+                            innerText += '<input type="checkbox" onClick ="saveCurrentlyFocusedColumnIndex(this)"; class="chkListInput" value="' + data[i].Value + '" id="' + changedId + "_check_box" + data[i].Value + '"> ' + data[i].Text + "</input><br/>";
+                        }
+                        innerText += "</div></td>";
+                        innerText = innerText.replace(/&quot;/g, " ");
+                        currentRow.find("td").eq(columnIndex).after(innerText);
+                        renameRuleOperandOnValueSelection(selectedValue, parentId, columnCount);
+                    }
+                }
+            });
+        }
+        else if (selectedValue == "DATE") {
+            columnHtml += '<td  width = "150" style ="display:inline-block">';
+            columnHtml += '@Html.EditorFor(model => model.FromDate,
+                          new { htmlAttributes = new { @id = "condition_control_date",
+                              @class = "form-control aa",
+                              @onClick = "saveCurrentlyFocusedColumnIndex(this)"
+                          } })';
+            columnHtml += '</td>';
+        }
+        else if (selectedValue == "FLOOR" || selectedValue == "CEILING" || selectedValue == "MATHMATICAL" ||
+            selectedValue == "DAY" || selectedValue == "MONTH" || selectedValue == "YEAR" || selectedValue == "VLOOKUP") {
+            columnHtml += '<td width = "150" style ="display:inline-block">';
+            columnHtml += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                    new SelectList(ListService.GetEnumItems<RuleOperandTypeList>(), "Value", "Text"), "--Select--",
+                    new { @id = "conditional_operand_type_list_newRow", @class = "form-control fstdropdown-select",
+                        @onChange = "createOperand(this)", @onClick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+            columnHtml += '</td>';
+        }
+        else
+        {
+            columnHtml += '<td  width = "150" style ="display:inline-block">';
+            columnHtml += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                          ViewBag.Parameter as IEnumerable<SelectListItem>, "--Select--",
+                            new { @id = "ruleParameterListCol12_newRow", @class = "form-control fstdropdown-select",
+                                @onClick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+            columnHtml += '</td>';
+        }
+
+        columnHtml = columnHtml.replace(/&quot;/g, " ");
+        currentRow.find("td").eq(columnIndex).after(columnHtml);
+
+        // Rename the controls.
+        var parentId = currentRow.closest('table').parent().attr('id');
+        var columnCount = currentRow.find("td").length;
+
+        renameRuleOperandOnValueSelection(selectedValue, parentId, columnCount);
+    }
+
+
+    function addNewOperandList(targetControl) {
+        var currentControlId = "#" + targetControl.id;
+        var selectedValue = $(currentControlId).find('option:selected').val();
+        var columnIndex = $(currentControlId).closest('td').index();
+        var currentRow = $(currentControlId).closest('tr');
+        var columnCount = currentRow.find("td").length;
+        var newColumn = '';
+        var paramType = 0;
+
+        if (selectedValue == "INTHETABLE") {
+            newColumn += '<td  width = "150" style ="display:inline-block">';
+            newColumn += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                          ViewBag.Parameter as IEnumerable<SelectListItem>, "--Select--",
+                            new { @id = "ruleParameterListCol12_newRow", @class = "form-control fstdropdown-select",
+                                @onClick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+            newColumn += '</td>';
+            paramType = 1;
+        }
+        else {
+            newColumn += '<td width = "150" style ="display:inline-block">';
+            newColumn += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                            new SelectList(ListService.GetEnumItems<RuleOperandTypeList>(), "Value", "Text"), "--Select--",
+            new { @id = "rule_operand_list_newRow", @class = "form-control fstdropdown-select", @onClick = "saveCurrentlyFocusedColumnIndex(this)",
+                @onChange = "createOperand(this)"
+            }).ToHtmlString())';
+            newColumn += '</td>';
+            paramType = 2;
+        }
+
+
+        newColumn = newColumn.replace(/&quot;/g, " ");
+        currentRow.find("td").eq(columnIndex).after(newColumn);
+
+        // Rename the control.
+        var parentId = currentRow.closest('table').parent().attr('id');
+        var columnCount = currentRow.find("td").length;
+
+        if (paramType == 1) {
+            $("#ruleParameterListCol12_newRow").attr("id", parentId + "_condition_operand_parameter_list_colindex_" + (columnCount++));
+        }
+        else {
+            $("#rule_operand_list_newRow").attr("id", parentId + "_condition_operand_type_list_colindex_" + (columnCount++));
+        }
+    }
+
+
+    function addNewColumns(targetControlId) {
+        var currentControlId = "#" + targetControlId.id;
+        var closestRow = $(currentControlId).closest('tr');
+
+        var columnsToAdd = '';
+
+        columnsToAdd += '<td  width = "150" style ="display:inline-block">';
+        columnsToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+                        new SelectList(ListService.GetEnumItems<MathematicalOperationList>(), "Value", "Text"),"--Select--",
+        new { @id = "compareOperationListExt1_newColumn", @class = "form-control fstdropdown-select",
+            @onClick = "saveCurrentlyFocusedColumnIndex(this)"
+        }).ToHtmlString())';
+        columnsToAdd += '</td>';
+
+        columnsToAdd += '<td  width = "150" style ="display:inline-block">';
+        columnsToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.CompareOperation,
+        new SelectList(ListService.GetEnumItems<RuleOperandTypeList>(), "Value", "Text"), "--Select--",
+        new { @id = "valueOrResultListExt2_NewColumn", @class = "form-control fstdropdown-select", @onchange = "createOperand(this)",
+            @onClick = "saveCurrentlyFocusedColumnIndex(this)"
+        }).ToHtmlString())';
+        columnsToAdd += '</td>';
+
+        columnsToAdd = columnsToAdd.replace(/&quot;/g, " ");
+
+        var targetColumnIndex = $('#hiddenField').val();
+        closestRow.find("td").eq(targetColumnIndex).after(columnsToAdd);
+
+        var parentId = closestRow.closest('table').parent().attr('id');
+        var columnCount = closestRow.find("td").length;
+
+        $("#compareOperationListExt1_newColumn").attr("id", parentId + "_condition_operator_list_colindex_" + (columnCount++));
+        $("#valueOrResultListExt2_NewColumn").attr("id", parentId + "_condition_operand_type_list_colindex_" + (columnCount++));
+    }
+
+
+    function addOutput() {
+        var rowToAdd = '';
+
+        rowToAdd += '<table id="tblChargeInner_new" class="table" style="table-layout:auto; white-space: nowrap;" cellpadding="0" cellspacing="0">';
+        rowToAdd += '<tr>';
+
+        rowToAdd += '<td  width = "150" style ="display:inline-block">';
+        rowToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.Operator,
+                    new SelectList(ListService.GetEnumItems<RuleOutputTypes> (), "Value", "Text"),"--Select--",
+                    new { @id = "rule_output_type_list_newRow", @class = "form-control fstdropdown-select" }).ToHtmlString())';
+        rowToAdd += '</td>';
+
+        rowToAdd += '<td  width = "150" style ="display:inline-block">';
+        rowToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(model => model.Operator,
+                    new SelectList(ListService.GetEnumItems<RuleOperandTypeList> (), "Value", "Text"),"--Select--",
+                    new { @id = "robValueTypeListCol1_newRow", @class = "form-control fstdropdown-select",
+                        @onChange = "createOperand(this)", onclick = "saveCurrentlyFocusedColumnIndex(this)" }).ToHtmlString())';
+        rowToAdd += '</td>';
+
+        rowToAdd += '<td  style ="display:inline-block">';
+        rowToAdd += '<a href="javascript:void(0);" id="btnAddRuleOutput_newColumn" title="Include more parameter" onclick="addNewColumns(this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-plus-sign fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnAddLeftBracketCellsCol13_newRow" title="Add left parenthesis" onclick="addOpenCloseParenthesis(1, this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-chevron-left fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id = "btnAddRightBracketCellsCol13_newRow" title="Add right parenthesis" onclick="addOpenCloseParenthesis(2, this)" style="padding-right: 5px;"><span class="glyphicon glyphicon-chevron-right fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id ="btnDeleteRuleParameter_newColumn" onClick = "deleteRuleParameter(this)"><span class="glyphicon glyphicon-minus-sign fa-2x"></span></a>';
+        rowToAdd += '<a href="javascript:void(0);" id ="btnDeleteRuleOutput_newColumn" onClick = "deleteRow(this)"><span class="glyphicon glyphicon-trash fa-2x"></span></a>';
+        rowToAdd += '</td>';
+
+        rowToAdd += '</tr></table></td></tr>';
+
+        rowToAdd = rowToAdd.replace(/&quot;/g, " ");
+        return rowToAdd;
+    }
+
+    function addRuleConnector() {
+        var rowToAdd = '';
+        rowToAdd += '<div class="connector_item" id="rule_connector">';
+        rowToAdd += '@Ajax.JavaScriptStringEncode(Html.DropDownListFor(m => m.Connector, new SelectList(ListService.GetEnumItems<RuleElseIfList>(), "Value", "Text"),
+        new { @id = "connectorList_newRow", @class = "form-control fstdropdown-select; width:100px" }).ToHtmlString())';
+        rowToAdd += '</div>';
+        rowToAdd = rowToAdd.replace(/&quot;/g, " ");
+        return rowToAdd;
+    }
+
+
+    function makeBody(columnHtml) {
+        var ruleBody = '';
+        var htmlStream = columnHtml.html();
+        if (htmlStream.includes('operand_type_list') || htmlStream.includes('valueOrResultList')) {
+            ruleBody = ruleBody + ':OPERAND_TYPE✿' + columnHtml.find("option:selected").val();
+        }
+        else if (htmlStream.includes('operand_parameter')) {
+            var groupName = columnHtml.find("option:selected").parent().attr('label');
+            if (groupName == "Rule") {
+                ruleBody = ruleBody + ':RULE_PARAMETER✿' + columnHtml.find("option:selected").val();
+            }
+            else {
+                ruleBody = ruleBody + ':PARAMETER✿' + columnHtml.find("option:selected").val();
+            }
+        }
+        else if (htmlStream.includes('comperator_list') && columnHtml.css('display') != 'none') {
+            ruleBody = ruleBody + ':COMPERATOR✿' + columnHtml.find("option:selected").val();
+        }
+        else if (htmlStream.includes('operand_txt')) {
+            ruleBody = ruleBody + ':OPERAND_TEXT✿' + columnHtml.find(":text").val();
+        }
+        else if (htmlStream.includes('operand_date')) {
+            ruleBody = ruleBody + ':OPERAND_DATE✿' + columnHtml.find(":text").val();
+        }
+        else if (htmlStream.includes('operator_list')) {
+            ruleBody = ruleBody + ':OPERATOR✿' + columnHtml.find("option:selected").val();
+        }
+        else if (htmlStream.includes('inner_connector_list')) {
+            ruleBody = ruleBody + ':INNER_CONNECTOR✿' + columnHtml.find("option:selected").val();
+        }
+
+        else if (htmlStream.includes('rule_output_type_list')) {
+            ruleBody = ruleBody + ':RULE_OUTPUT_TYPE✿' + columnHtml.find("option:selected").val();
+        }
+
+        else if (htmlStream.includes('start_parenthesis')) {
+            ruleBody = ruleBody + ':SP✿' + columnHtml.text();
+        }
+        else if (htmlStream.includes('end_parenthesis')) {
+            ruleBody = ruleBody + ':EP✿' + columnHtml.text();
+        }
+        else if (htmlStream.includes('rbTxtReference')) {
+            ruleBody = ruleBody + ':REFV✿' + columnHtml.find(":text").val();
+        }
+        else if (htmlStream.includes('numeric_parameter_list')) {
+            var stringBuilder = '';
+            jQuery("input:checked").each(function () {
+                if (stringBuilder.length == 0) {
+                    stringBuilder = $(this).val();
+                }
+                else {
+                    stringBuilder = stringBuilder + ',' + $(this).val();
+                }
+            });
+            ruleBody = ruleBody + stringBuilder;
+        }
+        return ruleBody;
+    }
+
+    $("body").on("click", "#save_rule_item", function () {
+
+        var ruleDetails = new Array();
+        var rowCount = $('#tblRule > tbody > tr').length;
+        var ruleCategory = $('#ruleCategoryList').find('option:selected').val();
+        var rowCounter = 1;
+        var count = 0;
+
+        if ($("#txtRuleName").val() == "") {
+            alert("Please enter the rule name.");
+            return;
+        }
+        if ($('#ai2cc1 > div').length <= 2 && $('#ai2cc1 > div').length == 0) {
+            alert('Please add at least one condition or action item');
+            return;
+        }
+
+        var ruleBody = '';
+        var ruleInfo = {};
+        ruleInfo.Name = $("#txtRuleName").val();
+
+        $('#action_list').children().each(function () {
+            var actionItem = $(this);
+            if (actionItem.attr('id').includes('ai') == 1) { // First level child is an action item.
+
+                actionItem.children().each(function () {
+                    var secondLevelChild = $(this);
+
+                    if (secondLevelChild.attr('id').includes(actionItem.attr('id') + 'cc')) // When second level child is a condition container.
+                    {
+                        secondLevelChild.each(function () {
+                            var thirdLevelChild = $(this);
+
+                            thirdLevelChild.each(function () {
+                                var children = $('#' + thirdLevelChild.attr('id') + ' > div');
+
+                                children.each(function () { // Data collection started from here.
+                                    var innerMostChild = $(this);
+
+                                     if (innerMostChild.attr('id').includes('ci')) {
+                                         var ruleTableId = '#' + innerMostChild.attr('id') + 'tbl';
+
+                                         if (ruleBody.length == 0) {
+                                             ruleBody = 'INPUT_AREA✿CC';
+                                         }
+                                         else {
+                                             ruleBody = ruleBody + ':INPUT_AREA✿CC';
+                                         }
+
+                                         if ($(this).html().includes('start_anchor')) {
+                                             ruleBody = ruleBody + ':INNER_BLOCK_START✿' + $(this).text();
+                                         }
+                                         else if ($(this).html().includes('close_anchor')) {
+                                             ruleBody = ruleBody + ':INNER_BLOCK_CLOSE✿' + $(this).text();
+                                         }
+
+                                        $(ruleTableId + " TBODY TR TD").each(function () {
+                                            var columnHtml = $(this); // Accessing each and individual column of rule row.
+                                            ruleBody += makeBody(columnHtml);
+
+                                         });
+                                    }
+                                    else if (innerMostChild.attr('id').includes('inner_connector')) {
+                                         ruleBody = ruleBody + ':INNER_CONNECTOR✿' + $(this).find("option:selected").val();
+                                    }
+                                });
+                            });
+                        });
+                    }
+                    else if (secondLevelChild.attr('id').includes(actionItem.attr('id') + 'ac')) // When second level child is a action container.
+                    {
+                        var ruleOutputTableId = '#' + secondLevelChild.attr('id') + 'ao1' + 'tbl';
+                        if (ruleBody.length == 0) {
+                            ruleBody = 'OUTPUT_AREA✿AC';
+                        }
+                        else {
+                            ruleBody = ruleBody + ':OUTPUT_AREA✿AC';
+                        }
+
+                        $(ruleOutputTableId + " TBODY TR TD").each(function () {
+                            var columnHtml = $(this); // Accessing each and individual column of rule row.
+                            ruleBody += makeBody(columnHtml);
+                        });
+                    }
+                });
+            }
+            else if (actionItem.attr('id').toString().includes('rule_connector')) { // First level child is a connector.
+                if (ruleBody.length == 0) {
+                    ruleBody = 'CASE_NAME✿' + $(this).find("option:selected").val();
+                }
+                else {
+                    ruleBody = ruleBody + ':CASE_NAME✿' + $(this).find("option:selected").val();
+                }
+            }
+        });
+
+        ruleInfo.RuleDetails = ruleBody;
+        ruleDetails.push(ruleInfo);
+
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            contentType: 'application/json; charset=utf-8',
+            url: "/Rule/Create",
+            data: JSON.stringify({ 'ruleList': ruleDetails }),
+            success: function (data) {
+                if (data == "success") {
+                    alert("Rule has been saved successfully!");
+                    window.location.replace(window.location.origin + "/Rule/RuleList");
+                }
+            }
+        });
+    });
+    
+
+</script>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}
